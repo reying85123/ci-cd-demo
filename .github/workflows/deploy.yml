@@ -1,0 +1,30 @@
+name: Deploy Frontend to GCE
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies and build
+      run: |
+        npm install
+        npm run build
+
+    - name: Set up SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.GCE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.GCE_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Deploy to GCE via rsync
+      run: |
+        rsync -avz --delete dist/ ${{ secrets.GCE_USERNAME }}@${{ secrets.GCE_HOST }}:/var/www/ci-cd-demo/
