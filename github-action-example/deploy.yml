@@ -18,11 +18,14 @@ jobs:
         npm install
         npm run build
 
-    - name: Set up SSH agent
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
-        ssh-passphrase: ${{ secrets.GCE_SSH_PASSPHRASE }}
+    - name: Set up SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.GCE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.GCE_HOST }} >> ~/.ssh/known_hosts
+        # 使用 ssh-add 來添加密碼保護的私鑰
+        echo "${{ secrets.GCE_SSH_PASSPHRASE }}" | ssh-add ~/.ssh/id_rsa
 
     - name: Deploy to GCE via rsync
       run: |
